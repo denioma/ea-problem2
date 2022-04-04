@@ -1,0 +1,6 @@
+# Executable
+main
+
+# vscode workspace and settings
+**/*.code-workspace
+**/.vscode
