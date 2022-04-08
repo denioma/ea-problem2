@@ -13,7 +13,6 @@ public:
 
     Member(int);
     ~Member() {};
-    void setRecruiter(int);
     bool operator<(Member);
 };
 
@@ -28,67 +27,59 @@ bool Member::operator<(Member other) {
 
 void addRecruiters(std::vector<Member>& members) {
     for (auto& member : members) {
+        if (member.id == -1) continue;
         for (auto& id : member.recruited) {
             members[id].recruiter = member.id;
         }
     }
 }
 
-void printMembers(std::vector<Member>& members) {
-    for (const auto& member : members) {
-        std::cout << "ID: " << member.id << "\n";
-        if (member.recruiter != -1)
-            std::cout << "Recruited by: " << member.recruiter << "\n";
-        std::cout << "Paid: " << member.cost << "\n";
-        if (member.recruited.empty()) continue;
-        std::cout << "Recruited:";
-        for (const auto& id : member.recruited) {
-            std::cout << " " << id;
-        }
-        std::cout << "\n";
-    }
-}
-
-std::vector<Member> members;
+std::vector<Member> members(100001, Member(-1));
 std::vector<bool> visited;
-int min, max;
+std::vector<std::vector<std::vector<int>>> dp;
 
-void explore(int i, int size, int cost) {
-    // If all members visited and new minimum or equal found
-    // Update min and max
-    if (std::find(visited.begin(), visited.end(), false) == visited.end() && size <= min) {
-        // Only save new higher cost or if size has decreased
-        if (size < min || cost > max) max = cost;
-        min = size;
-        return;
+int explore(int i, int guarded) {
+    if (members[i].recruited.empty()) { // Leaf
+        dp[i][1][1] = members[i].cost;
+        return guarded;
+    } else if (dp[i][guarded][0] != -1) { // If already cached
+        return dp[i][guarded][0];
     }
 
-    if (size > min || i > (int)members.size())
-        return;
-
-    if (members[i].recruiter != -1) visited[members[i].recruiter] = true;
-    visited[i] = true;
-    for (const auto& v : members[i].recruited) {
-        visited[v] = true;
+    int sum = 0;
+    for (const auto& id : members[i].recruited) {
+        if (guarded == 0) { // Must select all child nodes for edge inclusion
+            sum += explore(id, 1);
+            // Adds label of all child nodes to cost
+            dp[i][guarded][1] += dp[id][1][1];
+        } else {
+            int tmp1 = explore(id, 0);
+            int tmp2 = explore(id, 1);
+            if (tmp2 <= tmp1) {
+                dp[i][guarded][1] += members[id].cost;
+            }
+            sum += std::min(explore(id, 0), explore(id, 1));
+        }
     }
-
-    explore(i + 1, size + 1, cost + members[i].cost);
-
-    if (members[i].recruiter != -1) visited[members[i].recruiter] = false;
-    visited[i] = false;
-    for (const auto& v : members[i].recruited) {
-        visited[v] = false;
-    }
-
-    explore(i + 1, size, cost);
+    dp[i][guarded][0] = sum + guarded;
+    if (guarded) dp[i][guarded][1] += members[i].cost;
+    return dp[i][guarded][0];
 }
 
 void investigate() {
-    min = (int) members.size();
-    max = 0;
-    visited = std::vector<bool>(min, false);
-    explore(0, 0, 0);
-    std::cout << min << " " << max <<"\n";
+    visited = std::vector<bool>(members.size(), false);
+    std::vector<std::vector<int>> tmp(2, {-1, 0});
+    dp = std::vector<std::vector<std::vector<int>>>(members.size(), tmp);
+    int min = std::min(explore(0, 0), explore(0, 1));
+    int max = 0;
+    if (dp[0][0][0] == min) {
+        if (dp[0][1][0] == min)
+            max = std::max(dp[0][0][1], dp[0][1][1]);
+        else max = dp[0][0][1];
+    } else {
+        max = dp[0][1][1];
+    }
+    std::cout << min << " " << max << "\n";
 }
 
 int main() {
@@ -100,26 +91,21 @@ int main() {
 
     while (std::getline(std::cin, line)) {
         std::stringstream stream(line);
-        bool testcaseEnd = false;
         std::getline(stream, token, ' ');
-        n = std::stod(token);
-        if (n == -1) {
-            std::sort(members.begin(), members.end());
+        n = std::stoi(token);
+        if (n == -1) { // End of testcase input
             addRecruiters(members);
-            // printMembers(members);
             investigate();
-            members.clear();
-        } else {
+            members = std::vector<Member>(100001, Member(-1));
+        } else { // Testcase input
             Member member(n);
             while (std::getline(stream, token, ' ')) {
-                n = std::stod(token);
-                if ((testcaseEnd = stream.eof())) {
-                    member.cost = n;
-                } else {
-                    member.recruited.push_back(n);
-                }
+                n = std::stoi(token);
+                member.recruited.push_back(n);
             }
-            members.push_back(member);
+            member.recruited.pop_back();
+            member.cost = n;
+            members[member.id] = member;
         }
     }
 
