@@ -44,22 +44,22 @@ int explore(int i, int guarded) {
     }
 
     int sum = guarded;
-    for (const auto& id : members[i].recruited) {
+    for (const auto& child : members[i].recruited) {
         if (guarded == 0) { // Must select all child nodes for edge inclusion
-            sum += explore(id, 1);
+            sum += explore(child, 1);
             // Adds label of all child nodes to cost
-            dp[i][guarded][1] += dp[id][1][1];
+            dp[i][guarded][1] += dp[child][1][1];
         } else {
             // Pick the minimum size solution
             // If at a stalemate, pick the highest cost
-            int tmp1 = explore(id, 0);
-            int tmp2 = explore(id, 1);
+            int tmp1 = explore(child, 0);
+            int tmp2 = explore(child, 1);
             if (tmp1 == tmp2) {
-                dp[i][guarded][1] += std::max(dp[id][0][1], dp[id][1][1]);
+                dp[i][guarded][1] += std::max(dp[child][0][1], dp[child][1][1]);
             } else if (tmp1 < tmp2) {
-                dp[i][guarded][1] += dp[id][0][1];
+                dp[i][guarded][1] += dp[child][0][1];
             } else {
-                dp[i][guarded][1] += dp[id][1][1];
+                dp[i][guarded][1] += dp[child][1][1];
             }
             sum += std::min(tmp1, tmp2);
         }
