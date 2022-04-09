@@ -4,4 +4,4 @@ Group programming exercise #2
 
 ## Progresso
 
-20 pontos - Erro de execução
+200 pontos - Feito
